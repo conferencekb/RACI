@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import seaborn as sns
 import networkx as nx
+from io import BytesIO
 import os
 
 # --- Ініціалізація стану ---
@@ -18,18 +19,40 @@ roles = ["R", "A", "C", "I"]
 
 st.title("🔷 RACI Matrix Builder (Streamlit версія)")
 
-# --- Завантаження проекту з Excel ---
-st.header("📂 Завантажити проект")
-uploaded_file = st.file_uploader("Оберіть Excel-файл RACI", type=["xlsx", "xls"])
+# --- 0️⃣ Бічна панель: Завантаження та збереження проекту ---
+st.sidebar.header("💾 Керування проектом")
+
+# Завантаження проекту
+uploaded_file = st.sidebar.file_uploader("📂 Завантажити проект (Excel)", type=["xlsx"])
 if uploaded_file:
     try:
-        df = pd.read_excel(uploaded_file, index_col=0)
-        st.session_state.processes = df.index.tolist()
-        st.session_state.executors = df.columns.tolist()
-        st.session_state.roles_data = df.values.tolist()
-        st.success("Проект успішно завантажено!")
+        df = pd.read_excel(uploaded_file, index_col=None)
+        st.session_state.processes = df["Процеси"].tolist()
+        st.session_state.executors = df.columns[1:].tolist()
+        st.session_state.roles_data = df[df.columns[1:]].values.tolist()
+        st.sidebar.success("✅ Проект успішно завантажено!")
     except Exception as e:
-        st.error(f"Помилка завантаження файлу: {e}")
+        st.sidebar.error(f"Помилка завантаження файлу: {e}")
+
+# Збереження проекту в Excel
+def to_excel():
+    output = BytesIO()
+    data = {"Процеси": st.session_state.processes}
+    for idx, executor in enumerate(st.session_state.executors):
+        data[executor] = [roles[idx] for roles in st.session_state.roles_data]
+    df = pd.DataFrame(data)
+    with pd.ExcelWriter(output, engine="openpyxl") as writer:
+        df.to_excel(writer, index=False, sheet_name="RACI Matrix")
+    return output.getvalue()
+
+if st.session_state.processes:
+    excel_data = to_excel()
+    st.sidebar.download_button(
+        label="⬇️ Завантажити проект (Excel)",
+        data=excel_data,
+        file_name="raci_project.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
 
 # --- 1️⃣ Введення та видалення виконавців ---
 st.header("Управління виконавцями")
@@ -55,14 +78,12 @@ with col2:
         else:
             idx = st.session_state.executors.index(executor_name)
             st.session_state.executors.pop(idx)
-            # Видаляємо роль цього виконавця з усіх процесів
-            for roles in st.session_state.roles_data:
-                roles.pop(idx)
+            for roles_list in st.session_state.roles_data:
+                roles_list.pop(idx)
             st.success(f"Виконавець '{executor_name}' видалений.")
 
 if st.session_state.executors:
     st.write("**Поточні виконавці:**", ", ".join(map(str, st.session_state.executors)))
-
 
 # --- 2️⃣ Введення та видалення процесів ---
 st.header("Управління процесами")
@@ -71,9 +92,8 @@ process_name = st.text_input("Введіть назву процесу для д
 roles_for_process = {}
 if st.session_state.executors:
     st.subheader("Оберіть ролі для нового процесу")
-    # Використовуємо колонки для розташування радіо кнопок поруч або компактніше
     for ex in st.session_state.executors:
-        cols = st.columns([1, 2])  # 1 частина для імені, 2 частини для радіо
+        cols = st.columns([1, 2])
         with cols[0]:
             st.markdown(f"**{ex}**")
         with cols[1]:
@@ -114,8 +134,7 @@ with col4:
 if st.session_state.processes:
     st.write("**Поточні процеси:**", ", ".join(map(str, st.session_state.processes)))
 
-
-# --- 3. Відображення RACI матриці ---
+# --- 3️⃣ Відображення RACI матриці ---
 if st.session_state.processes:
     data = {"Процеси": st.session_state.processes}
     for idx, executor in enumerate(st.session_state.executors):
