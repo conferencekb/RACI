@@ -72,7 +72,7 @@ with col1:
 with col2:
     if st.button("❌ Видалити виконавця"):
         if executor_name.strip() == "":
-            st.error("Введіть ім'я виконавця для видалення.")
+            st.error("Введіть виконавця для видалення.")
         elif executor_name not in st.session_state.executors:
             st.warning("Такого виконавця немає.")
         else:
