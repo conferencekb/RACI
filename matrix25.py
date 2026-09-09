@@ -56,13 +56,13 @@ if st.session_state.processes:
 
 # --- 1️⃣ Введення та видалення виконавців ---
 st.header("Управління виконавцями")
-executor_name = st.text_input("Введіть ім'я виконавця для додавання/видалення", key="executor_input")
+executor_name = st.text_input("Введіть виконавця для додавання/видалення", key="executor_input")
 
 col1, col2 = st.columns(2)
 with col1:
     if st.button("➕ Додати виконавця"):
         if executor_name.strip() == "":
-            st.error("Введіть ім'я виконавця.")
+            st.error("Введіть виконавця.")
         elif executor_name in st.session_state.executors:
             st.warning("Такий виконавець вже існує.")
         else:
