@@ -17,7 +17,7 @@ if "roles_data" not in st.session_state:
 
 roles = ["R", "A", "C", "I"]
 
-st.title("🔷 RACI Matrix Builder (Streamlit версія)")
+st.title("🔷 RACI Matrix")
 
 # --- 0️⃣ Бічна панель: Завантаження та збереження проекту ---
 st.sidebar.header("💾 Керування проектом")
